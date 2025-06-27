@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Document Processor</title>
+    <title>MVP Health Care Document Processor</title>
     <style>
         * {
             margin: 0;
@@ -125,6 +125,77 @@
             display: none;
         }
 
+        .config-section {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+
+        .config-section h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
         .btn {
             background: linear-gradient(135deg, #3498db, #2980b9);
             color: white;
@@ -138,6 +209,7 @@
             text-decoration: none;
             display: inline-block;
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            margin: 10px;
         }
 
         .btn:hover {
@@ -212,6 +284,55 @@
             letter-spacing: 1px;
         }
 
+        .analysis-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .analysis-section h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .keyword-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .keyword-tag {
+            background: #3498db;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .medicare-checks {
+            list-style: none;
+            margin-top: 15px;
+        }
+
+        .medicare-checks li {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #e74c3c;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .medicare-checks li.info {
+            border-left-color: #3498db;
+        }
+
+        .medicare-checks li.success {
+            border-left-color: #27ae60;
+        }
+
         .corrections-preview {
             background: #f8f9fa;
             padding: 20px;
@@ -281,6 +402,10 @@
                 padding: 40px 20px;
             }
 
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
             .stats-grid {
                 grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             }
@@ -291,24 +416,24 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>📄  Document Processor</h1>
-            <p>Automatically apply all 71 corporate standards to your Word documents</p>
+            <h1>📄 MVP Health Care Document Processor</h1>
+            <p>Automatically apply all corporate standards with comprehensive analysis</p>
             
             <div class="features">
                 <div class="feature">
                     <div class="feature-icon">⚡</div>
-                    <h3>71 Corporate Rules</h3>
-                    <p>Time formatting, terminology, branding, and more</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Instant Processing</h3>
-                    <p>Upload .docx files and get corrected documents</p>
+                    <h3>Smart Processing</h3>
+                    <p>Corporate rules with user configuration</p>
                 </div>
                 <div class="feature">
                     <div class="feature-icon">📊</div>
-                    <h3>Detailed Reports</h3>
-                    <p>See exactly what was corrected and why</p>
+                    <h3>Comprehensive Analysis</h3>
+                    <p>Detailed reports and compliance checking</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🏥</div>
+                    <h3>Medicare Compliance</h3>
+                    <p>Specialized checks for Medicare pages</p>
                 </div>
             </div>
         </div>
@@ -327,6 +452,50 @@
                 <div class="file-info" id="file-info">
                     <strong>Selected file:</strong> <span id="file-name"></span>
                 </div>
+
+                <!-- Configuration Section -->
+                <div class="config-section" id="config-section" style="display: none;">
+                    <h3>🔧 Processing Configuration</h3>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="target-word-count">Target Word Count</label>
+                            <input type="number" id="target-word-count" placeholder="e.g., 1500" min="100" max="10000">
+                            <small>Optional: Set a target word count for analysis</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="target-reading-level">Target Reading Level</label>
+                            <select id="target-reading-level">
+                                <option value="">Select reading level</option>
+                                <option value="4">Grade 4 (Elementary)</option>
+                                <option value="5">Grade 5</option>
+                                <option value="6">Grade 6</option>
+                                <option value="7">Grade 7</option>
+                                <option value="8" selected>Grade 8 (Recommended)</option>
+                                <option value="9">Grade 9</option>
+                                <option value="10">Grade 10</option>
+                                <option value="11">Grade 11</option>
+                                <option value="12">Grade 12 (High School)</option>
+                            </select>
+                            <small>Target reading level for your audience</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="seo-keywords">SEO Keywords</label>
+                            <textarea id="seo-keywords" placeholder="keyword1, keyword2, keyword3" rows="3"></textarea>
+                            <small>Up to 5 keywords separated by commas (for frequency analysis)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="is-medicare-page">
+                                <label for="is-medicare-page">This is a Medicare page</label>
+                            </div>
+                            <small>Check if this document is Medicare-related (enables special compliance checks)</small>
+                        </div>
+                    </div>
+                </div>
                 
                 <div style="text-align: center; margin-top: 20px;">
                     <button class="btn" id="analyze-btn" onclick="analyzeDocument()" disabled>
@@ -342,19 +511,37 @@
             <div class="processing" id="processing">
                 <div class="spinner"></div>
                 <h3>Processing your document...</h3>
-                <p>Applying  corporate standards</p>
+                <p>Applying MVP Health Care corporate standards and generating analysis report</p>
             </div>
 
             <!-- Results Section -->
             <div class="results" id="results">
-                <h2>📊 Processing Complete!</h2>
+                <h2>📊 Analysis Complete!</h2>
                 
                 <div class="stats-grid" id="stats-grid">
                     <!-- Stats will be populated by JavaScript -->
                 </div>
                 
+                <!-- Target Analysis -->
+                <div class="analysis-section" id="target-analysis" style="display: none;">
+                    <h4>🎯 Target Analysis</h4>
+                    <div id="target-analysis-content"></div>
+                </div>
+
+                <!-- Keyword Analysis -->
+                <div class="analysis-section" id="keyword-analysis" style="display: none;">
+                    <h4>🔍 SEO Keyword Analysis</h4>
+                    <div id="keyword-analysis-content"></div>
+                </div>
+
+                <!-- Medicare Compliance -->
+                <div class="analysis-section" id="medicare-compliance" style="display: none;">
+                    <h4>🏥 Medicare Compliance Check</h4>
+                    <ul class="medicare-checks" id="medicare-checks-list"></ul>
+                </div>
+                
                 <div class="corrections-preview" id="corrections-preview">
-                    <h3>🔧 Corrections Applied</h3>
+                    <h4>🔧 Corrections Applied</h4>
                     <div id="corrections-summary"></div>
                     <ul class="corrections-list" id="corrections-list">
                         <!-- Corrections will be populated by JavaScript -->
@@ -381,40 +568,30 @@
 
         <!-- About Section -->
         <div class="main-card">
-            <h2>🏥 About  Document Processor</h2>
-            <p>This tool automatically applies 's complete corporate standards to your Word documents, ensuring consistency across all communications.</p>
+            <h2>🏥 Enhanced MVP Document Processor</h2>
+            <p>This enhanced tool provides comprehensive document processing with detailed analysis, Medicare compliance checking, and SEO keyword analysis.</p>
             
-            <h3 style="margin-top: 25px;">📋 What Gets Corrected:</h3>
+            <h3 style="margin-top: 25px;">🆕 New Features:</h3>
             <div class="features">
                 <div class="feature">
-                    <div class="feature-icon">⏰</div>
-                    <h3>Time Formatting</h3>
-                    <p>Standardizes AM/PM, removes :00, adds proper spacing</p>
+                    <div class="feature-icon">🎯</div>
+                    <h3>Target Analysis</h3>
+                    <p>Compare word count and reading level to your targets</p>
                 </div>
                 <div class="feature">
-                    <div class="feature-icon">🔢</div>
-                    <h3>Number Formatting</h3>
-                    <p>Spells out 1-9, adds commas to large numbers</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">🏷️</div>
-                    <h3>Branding</h3>
-                    <p>Adds ® and ℠ symbols, corrects  terminology</p>
+                    <div class="feature-icon">🔍</div>
+                    <h3>SEO Keywords</h3>
+                    <p>Track keyword frequency and optimize content</p>
                 </div>
                 <div class="feature">
                     <div class="feature-icon">🏥</div>
-                    <h3>Healthcare Terms</h3>
-                    <p>Updates to preferred terms like "virtual care"</p>
+                    <h3>Medicare Compliance</h3>
+                    <p>Automatic TTY 711 and CMS code checking</p>
                 </div>
                 <div class="feature">
-                    <div class="feature-icon">📍</div>
-                    <h3>State Abbreviations</h3>
-                    <p>Removes periods, ensures proper capitalization</p>
-                </div>
-                <div class="feature">
-                    <div class="feature-icon">✏️</div>
-                    <h3>Punctuation</h3>
-                    <p>Fixes spacing, replaces & with "and"</p>
+                    <div class="feature-icon">📋</div>
+                    <h3>Comprehensive Reports</h3>
+                    <p>Detailed analysis appended to processed documents</p>
                 </div>
             </div>
         </div>
@@ -466,6 +643,7 @@
             // Show file info
             document.getElementById('file-name').textContent = file.name;
             document.getElementById('file-info').style.display = 'block';
+            document.getElementById('config-section').style.display = 'block';
             
             // Enable buttons
             document.getElementById('analyze-btn').disabled = false;
@@ -473,6 +651,16 @@
             
             // Hide any previous results
             hideMessages();
+        }
+
+        function getUserConfig() {
+            const keywords = document.getElementById('seo-keywords').value;
+            return {
+                target_word_count: document.getElementById('target-word-count').value,
+                keywords: keywords,
+                target_reading_level: document.getElementById('target-reading-level').value,
+                is_medicare_page: document.getElementById('is-medicare-page').checked
+            };
         }
 
         async function analyzeDocument() {
@@ -485,6 +673,12 @@
             
             const formData = new FormData();
             formData.append('file', selectedFile);
+            
+            // Add user configuration
+            const config = getUserConfig();
+            Object.keys(config).forEach(key => {
+                formData.append(key, config[key]);
+            });
 
             try {
                 const response = await fetch('/analyze', {
@@ -516,6 +710,12 @@
             
             const formData = new FormData();
             formData.append('file', selectedFile);
+            
+            // Add user configuration
+            const config = getUserConfig();
+            Object.keys(config).forEach(key => {
+                formData.append(key, config[key]);
+            });
 
             try {
                 const response = await fetch('/process', {
@@ -535,7 +735,7 @@
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                     
-                    showSuccess('Document processed and downloaded successfully!');
+                    showSuccess('Document processed with comprehensive analysis report and downloaded successfully!');
                 } else {
                     const result = await response.json();
                     showError(result.error || 'Processing failed');
@@ -550,6 +750,7 @@
         function showAnalysisResults(result) {
             const stats = result.document_statistics;
             const corrections = result.corrections_preview;
+            const config = result.user_config;
             
             // Populate stats
             const statsGrid = document.getElementById('stats-grid');
@@ -576,6 +777,78 @@
                 </div>
             `;
             
+            // Show target analysis if targets were set
+            if (config.target_word_count || config.target_reading_level) {
+                const targetAnalysis = document.getElementById('target-analysis');
+                let targetContent = '';
+                
+                if (config.target_word_count) {
+                    const target = parseInt(config.target_word_count);
+                    const actual = stats.word_count;
+                    const percentage = (actual / target * 100).toFixed(1);
+                    const diff = actual - target;
+                    
+                    targetContent += `<p><strong>Word Count:</strong> ${actual.toLocaleString()} words (${percentage}% of ${target.toLocaleString()} target)`;
+                    if (diff > 0) {
+                        targetContent += ` - <span style="color: #e74c3c;">${diff} words over</span>`;
+                    } else if (diff < 0) {
+                        targetContent += ` - <span style="color: #f39c12;">${Math.abs(diff)} words under</span>`;
+                    } else {
+                        targetContent += ` - <span style="color: #27ae60;">On target!</span>`;
+                    }
+                    targetContent += '</p>';
+                }
+                
+                if (config.target_reading_level) {
+                    const target = parseFloat(config.target_reading_level);
+                    const actual = stats.reading_level;
+                    const diff = actual - target;
+                    
+                    targetContent += `<p><strong>Reading Level:</strong> Grade ${actual.toFixed(1)} (target: Grade ${target})`;
+                    if (Math.abs(diff) <= 0.5) {
+                        targetContent += ` - <span style="color: #27ae60;">On target!</span>`;
+                    } else if (diff > 0) {
+                        targetContent += ` - <span style="color: #e74c3c;">${diff.toFixed(1)} grades above target</span>`;
+                    } else {
+                        targetContent += ` - <span style="color: #f39c12;">${Math.abs(diff).toFixed(1)} grades below target</span>`;
+                    }
+                    targetContent += '</p>';
+                }
+                
+                document.getElementById('target-analysis-content').innerHTML = targetContent;
+                targetAnalysis.style.display = 'block';
+            }
+            
+            // Show keyword analysis
+            if (result.keyword_analysis && Object.keys(result.keyword_analysis).length > 0) {
+                const keywordAnalysis = document.getElementById('keyword-analysis');
+                let keywordContent = '<div class="keyword-list">';
+                
+                for (const [keyword, count] of Object.entries(result.keyword_analysis)) {
+                    keywordContent += `<div class="keyword-tag">"${keyword}": ${count} times</div>`;
+                }
+                keywordContent += '</div>';
+                
+                document.getElementById('keyword-analysis-content').innerHTML = keywordContent;
+                keywordAnalysis.style.display = 'block';
+            }
+            
+            // Show Medicare compliance checks
+            if (config.is_medicare_page && result.medicare_checks && result.medicare_checks.length > 0) {
+                const medicareCompliance = document.getElementById('medicare-compliance');
+                const checksList = document.getElementById('medicare-checks-list');
+                checksList.innerHTML = '';
+                
+                result.medicare_checks.forEach(check => {
+                    const li = document.createElement('li');
+                    li.className = check.severity;
+                    li.innerHTML = `<strong>${check.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> ${check.description}`;
+                    checksList.appendChild(li);
+                });
+                
+                medicareCompliance.style.display = 'block';
+            }
+            
             // Show corrections preview
             document.getElementById('corrections-summary').innerHTML = 
                 `<p><strong>${result.potential_corrections}</strong> corrections found across <strong>${Object.keys(corrections).length}</strong> categories.</p>`;
@@ -597,7 +870,7 @@
         function getProcessedFilename(originalName) {
             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
             const baseName = originalName.replace('.docx', '');
-            return `${baseName}_processed_${timestamp}.docx`;
+            return `${baseName}_processed_with_analysis_${timestamp}.docx`;
         }
 
         function showProcessing() {
@@ -628,17 +901,45 @@
             document.getElementById('error-message').style.display = 'none';
             document.getElementById('success-message').style.display = 'none';
             document.getElementById('results').style.display = 'none';
+            document.getElementById('target-analysis').style.display = 'none';
+            document.getElementById('keyword-analysis').style.display = 'none';
+            document.getElementById('medicare-compliance').style.display = 'none';
         }
 
         function resetForm() {
             selectedFile = null;
             document.getElementById('file-input').value = '';
             document.getElementById('file-info').style.display = 'none';
+            document.getElementById('config-section').style.display = 'none';
             document.getElementById('analyze-btn').disabled = true;
             document.getElementById('process-btn').disabled = true;
+            
+            // Reset form fields
+            document.getElementById('target-word-count').value = '';
+            document.getElementById('target-reading-level').value = '';
+            document.getElementById('seo-keywords').value = '';
+            document.getElementById('is-medicare-page').checked = false;
+            
             hideMessages();
             hideProcessing();
         }
+
+        // Validate keyword input (max 5 keywords)
+        document.getElementById('seo-keywords').addEventListener('input', function(e) {
+            const keywords = e.target.value.split(',').map(k => k.trim()).filter(k => k);
+            if (keywords.length > 5) {
+                e.target.setCustomValidity('Maximum 5 keywords allowed');
+            } else {
+                e.target.setCustomValidity('');
+            }
+        });
+
+        // Auto-focus on target word count when file is selected
+        document.getElementById('file-input').addEventListener('change', function() {
+            setTimeout(() => {
+                document.getElementById('target-word-count').focus();
+            }, 100);
+        });
     </script>
 </body>
 </html>
