@@ -657,8 +657,8 @@ class MVPDocumentProcessor:
                 original_text = run.text
                 current_text = original_text
                 
-                # Extract and preserve angle bracket content
-                current_text, bracket_placeholders = self._extract_angle_bracket_content(current_text)
+                # Extract and preserve bracket content (angle and square)
+                current_text, bracket_placeholders = self._extract_bracket_content(current_text)
 
                 # Apply each rule category
                 for category_name, category_rules in self.rules.items():
@@ -699,8 +699,8 @@ class MVPDocumentProcessor:
                             print(f"⚠️ Regex error in rule {rule.get('category', 'unknown')}: {e}")
                             continue
 
-                # Restore angle bracket content
-                current_text = self._restore_angle_bracket_content(current_text, bracket_placeholders)
+                # Restore bracket content
+                current_text = self._restore_bracket_content(current_text, bracket_placeholders)
 
                 # Update run text if changes were made
                 if current_text != original_text:
