@@ -225,23 +225,37 @@ class MVPDocumentProcessor:
             ]
         }
     
-    def _extract_angle_bracket_content(self, text):
-        """Extract and preserve content in angle brackets"""
-        angle_bracket_pattern = r'<[^>]*>'
-        brackets = []
-        bracket_placeholders = {}
+    def _extract_bracket_content(self, text):
+        """Extract and preserve content in both angle brackets and square brackets"""
+        all_placeholders = {}
+        bracket_counter = 0
         
-        def extract_bracket(match):
-            placeholder = f"ANGLE_BRACKET_PLACEHOLDER_{len(brackets)}"
-            brackets.append(match.group(0))
-            bracket_placeholders[placeholder] = match.group(0)
+        # Extract angle brackets first
+        angle_bracket_pattern = r'<[^>]*>'
+        def extract_angle_bracket(match):
+            nonlocal bracket_counter
+            placeholder = f"BRACKET_PLACEHOLDER_{bracket_counter}"
+            bracket_counter += 1
+            all_placeholders[placeholder] = match.group(0)
             return placeholder
         
-        text_without_brackets = re.sub(angle_bracket_pattern, extract_bracket, text)
-        return text_without_brackets, bracket_placeholders
+        text = re.sub(angle_bracket_pattern, extract_angle_bracket, text)
+        
+        # Extract square brackets
+        square_bracket_pattern = r'\[[^\]]*\]'
+        def extract_square_bracket(match):
+            nonlocal bracket_counter
+            placeholder = f"BRACKET_PLACEHOLDER_{bracket_counter}"
+            bracket_counter += 1
+            all_placeholders[placeholder] = match.group(0)
+            return placeholder
+        
+        text = re.sub(square_bracket_pattern, extract_square_bracket, text)
+        
+        return text, all_placeholders
     
-    def _restore_angle_bracket_content(self, text, bracket_placeholders):
-        """Restore angle bracket content from placeholders"""
+    def _restore_bracket_content(self, text, bracket_placeholders):
+        """Restore both angle bracket and square bracket content from placeholders"""
         for placeholder, original_bracket in bracket_placeholders.items():
             text = text.replace(placeholder, original_bracket)
         return text
