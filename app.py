@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 MVP Document Processor - Enhanced Flask Web Application
-Complete web interface with user inputs and comprehensive analysis
+Complete web interface with user inputs, comprehensive analysis, and disclaimer bookmarks
 """
 
 from flask import Flask, render_template, request, send_file, flash, redirect, url_for, jsonify
@@ -32,7 +32,7 @@ def allowed_file(filename):
 
 class MVPDocumentProcessor:
     """
-    Enhanced MVP Document Processor with user inputs and comprehensive analysis
+    Enhanced MVP Document Processor with user inputs, comprehensive analysis, and disclaimer bookmarks
     """
     
     def __init__(self):
@@ -267,40 +267,120 @@ class MVPDocumentProcessor:
                 break  # Stop searching after finding end marker
         
         return start_para, end_para
+
+    def _find_disclaimer_range(self, doc, start_disclaimer="start_disclaimer", end_disclaimer="end_disclaimer"):
+        """Find paragraph range between disclaimer markers"""
+        start_para = None
+        end_para = None
+        
+        # Search for disclaimer markers in paragraph content
+        for i, para in enumerate(doc.paragraphs):
+            para_text = para.text.strip().lower()
+            
+            # Check if paragraph contains start disclaimer marker
+            if start_disclaimer.lower() in para_text:
+                start_para = i
+                print(f"📍 Found disclaimer start marker '{start_disclaimer}' at paragraph {i}")
+            
+            # Check if paragraph contains end disclaimer marker
+            if end_disclaimer.lower() in para_text:
+                end_para = i
+                print(f"📍 Found disclaimer end marker '{end_disclaimer}' at paragraph {i}")
+                break  # Stop searching after finding end marker
+        
+        return start_para, end_para
     
     def _check_medicare_compliance(self, doc):
-        """Check Medicare-specific compliance requirements"""
+        """Check Medicare-specific compliance requirements with enhanced disclaimer checking"""
         medicare_issues = []
+        
+        # Get full document text for general checks
         full_text = ' '.join([p.text for p in doc.paragraphs if p.text.strip()])
         
-        # Check for CMS code (Y followed by letters/numbers with two underscores)
-        cms_code_pattern = r'\bY[A-Z0-9]*_[A-Z0-9]*_[A-Z0-9]*\b'
-        cms_codes = re.findall(cms_code_pattern, full_text)
+        # Check for CMS code specifically in disclaimer section if Medicare page
+        if self.user_config.get('is_medicare_page'):
+            # Find disclaimer section
+            disclaimer_start, disclaimer_end = self._find_disclaimer_range(doc)
+            
+            if disclaimer_start is not None and disclaimer_end is not None:
+                # Get text only from disclaimer section
+                disclaimer_paragraphs = doc.paragraphs[disclaimer_start:disclaimer_end + 1]
+                disclaimer_text = ' '.join([p.text for p in disclaimer_paragraphs if p.text.strip()])
+                
+                print(f"📍 Checking CMS code in disclaimer section (paragraphs {disclaimer_start}-{disclaimer_end})")
+                
+                # Check for CMS code in disclaimer section
+                cms_code_pattern = r'\bY[A-Z0-9]*_[A-Z0-9]*_[A-Z0-9]*\b'
+                cms_codes = re.findall(cms_code_pattern, disclaimer_text)
+                
+                if not cms_codes:
+                    medicare_issues.append({
+                        'type': 'missing_cms_code_in_disclaimer',
+                        'description': 'Missing CMS code in disclaimer section (should start with Y and contain two underscores)',
+                        'severity': 'high',
+                        'location': f'Disclaimer section (paragraphs {disclaimer_start}-{disclaimer_end})'
+                    })
+                else:
+                    medicare_issues.append({
+                        'type': 'cms_code_found_in_disclaimer',
+                        'description': f'CMS code found in disclaimer: {cms_codes[0]}',
+                        'severity': 'info',
+                        'location': f'Disclaimer section (paragraphs {disclaimer_start}-{disclaimer_end})'
+                    })
+            else:
+                # If no disclaimer section found, check entire document
+                print(f"📍 No disclaimer section found, checking entire document for CMS code")
+                cms_code_pattern = r'\bY[A-Z0-9]*_[A-Z0-9]*_[A-Z0-9]*\b'
+                cms_codes = re.findall(cms_code_pattern, full_text)
+                
+                if not cms_codes:
+                    medicare_issues.append({
+                        'type': 'missing_cms_code',
+                        'description': 'Missing CMS code (should start with Y and contain two underscores). Consider adding disclaimer section with start_disclaimer and end_disclaimer markers.',
+                        'severity': 'high',
+                        'location': 'Entire document'
+                    })
+                else:
+                    medicare_issues.append({
+                        'type': 'cms_code_found',
+                        'description': f'CMS code found: {cms_codes[0]} (Note: Consider placing in disclaimer section)',
+                        'severity': 'info',
+                        'location': 'Document body'
+                    })
         
-        if not cms_codes:
-            medicare_issues.append({
-                'type': 'missing_cms_code',
-                'description': 'Missing CMS code (should start with Y and contain two underscores)',
-                'severity': 'high'
-            })
+        # Check for phone numbers without TTY (in main content area)
+        # Find main content area
+        content_start, content_end = self._find_bookmark_range(doc)
+        
+        if content_start is not None and content_end is not None:
+            # Check only main content area for phone numbers
+            content_paragraphs = doc.paragraphs[content_start:content_end + 1]
+            content_text = ' '.join([p.text for p in content_paragraphs if p.text.strip()])
+            
+            phone_pattern = r'\b(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})\b(?!\s*\(TTY 711\))'
+            phone_matches = re.findall(phone_pattern, content_text)
+            
+            if phone_matches:
+                medicare_issues.append({
+                    'type': 'phone_missing_tty_in_content',
+                    'description': f'Found {len(phone_matches)} phone number(s) without TTY 711 in main content area',
+                    'severity': 'medium',
+                    'phone_numbers': phone_matches,
+                    'location': f'Main content area (paragraphs {content_start}-{content_end})'
+                })
         else:
-            medicare_issues.append({
-                'type': 'cms_code_found',
-                'description': f'CMS code found: {cms_codes[0]}',
-                'severity': 'info'
-            })
-        
-        # Check for phone numbers without TTY
-        phone_pattern = r'\b(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})\b(?!\s*\(TTY 711\))'
-        phone_matches = re.findall(phone_pattern, full_text)
-        
-        if phone_matches:
-            medicare_issues.append({
-                'type': 'phone_missing_tty',
-                'description': f'Found {len(phone_matches)} phone number(s) without TTY 711',
-                'severity': 'medium',
-                'phone_numbers': phone_matches
-            })
+            # Check entire document if no content markers found
+            phone_pattern = r'\b(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})\b(?!\s*\(TTY 711\))'
+            phone_matches = re.findall(phone_pattern, full_text)
+            
+            if phone_matches:
+                medicare_issues.append({
+                    'type': 'phone_missing_tty',
+                    'description': f'Found {len(phone_matches)} phone number(s) without TTY 711',
+                    'severity': 'medium',
+                    'phone_numbers': phone_matches,
+                    'location': 'Entire document'
+                })
         
         return medicare_issues
     
@@ -344,6 +424,25 @@ class MVPDocumentProcessor:
         config_text += f"Reading Level: {self.user_config.get('target_reading_level', 'Not specified')}, "
         config_text += f"Medicare Page: {'Yes' if self.user_config.get('is_medicare_page') else 'No'}"
         config_para.add_run(config_text)
+        
+        # Document structure analysis
+        content_start, content_end = self._find_bookmark_range(doc)
+        disclaimer_start, disclaimer_end = self._find_disclaimer_range(doc)
+        
+        structure_para = doc.add_paragraph()
+        structure_para.add_run('Document Structure: ').bold = True
+        structure_text = ""
+        if content_start is not None and content_end is not None:
+            structure_text += f"Main content area found (paragraphs {content_start}-{content_end}). "
+        else:
+            structure_text += "No content markers found, processed entire document. "
+        
+        if disclaimer_start is not None and disclaimer_end is not None:
+            structure_text += f"Disclaimer section found (paragraphs {disclaimer_start}-{disclaimer_end})."
+        else:
+            structure_text += "No disclaimer section found."
+        
+        structure_para.add_run(structure_text)
         
         # Statistics Summary
         stats = results['document_statistics']
@@ -425,7 +524,7 @@ class MVPDocumentProcessor:
                 keyword_para.add_run(f'"{keyword}": ').bold = True
                 keyword_para.add_run(f"{count} occurrences")
         
-        # Medicare Compliance (if applicable)
+        # Medicare Compliance (if applicable) - Enhanced with location info
         if self.user_config.get('is_medicare_page') and self.medicare_checks:
             doc.add_heading('Medicare Compliance Check', level=2)
             
@@ -433,8 +532,32 @@ class MVPDocumentProcessor:
                 check_para = doc.add_paragraph()
                 check_para.add_run(f"{check['type'].replace('_', ' ').title()}: ").bold = True
                 check_para.add_run(check['description'])
+                
+                # Add location information if available
+                if 'location' in check:
+                    location_para = doc.add_paragraph()
+                    location_para.add_run('Location: ').bold = True
+                    location_para.add_run(check['location'])
         
-        # Detailed Changes Table
+        # Document Structure Guide
+        if self.user_config.get('is_medicare_page'):
+            doc.add_heading('Document Structure Guide', level=2)
+            
+            guide_para = doc.add_paragraph()
+            guide_para.add_run('For optimal Medicare compliance, use these text markers in your document:').bold = True
+            
+            markers_list = [
+                'start_page_copy - Begin main content processing',
+                'end_page_copy - End main content processing', 
+                'start_disclaimer - Begin disclaimer section (for CMS code placement)',
+                'end_disclaimer - End disclaimer section'
+            ]
+            
+            for marker in markers_list:
+                marker_para = doc.add_paragraph()
+                marker_para.add_run(f"• {marker}")
+        
+        # Detailed Changes Table - With fixed styling
         if results['detailed_corrections']:
             doc.add_heading('Detailed Changes Applied', level=2)
             
@@ -850,3 +973,4 @@ def health_check():
 if __name__ == '__main__':
     # For local development
     app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+                
