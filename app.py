@@ -225,17 +225,17 @@ class MVPDocumentProcessor:
             ]
         }
     
-    def _extract_bracket_content(self, text):
-        """Extract and preserve content in both angle brackets and square brackets"""
+    def _extract_protected_content(self, text):
+        """Extract and preserve content in brackets and URLs"""
         all_placeholders = {}
-        bracket_counter = 0
+        counter = 0
         
-        # Extract angle brackets first
+        # Extract angle brackets
         angle_bracket_pattern = r'<[^>]*>'
         def extract_angle_bracket(match):
-            nonlocal bracket_counter
-            placeholder = f"BRACKET_PLACEHOLDER_{bracket_counter}"
-            bracket_counter += 1
+            nonlocal counter
+            placeholder = f"PROTECTED_CONTENT_{counter}"
+            counter += 1
             all_placeholders[placeholder] = match.group(0)
             return placeholder
         
@@ -244,20 +244,37 @@ class MVPDocumentProcessor:
         # Extract square brackets
         square_bracket_pattern = r'\[[^\]]*\]'
         def extract_square_bracket(match):
-            nonlocal bracket_counter
-            placeholder = f"BRACKET_PLACEHOLDER_{bracket_counter}"
-            bracket_counter += 1
+            nonlocal counter
+            placeholder = f"PROTECTED_CONTENT_{counter}"
+            counter += 1
             all_placeholders[placeholder] = match.group(0)
             return placeholder
         
         text = re.sub(square_bracket_pattern, extract_square_bracket, text)
         
+        # Extract URLs - comprehensive pattern
+        url_patterns = [
+            r'https?://[^\s]+',  # http:// and https:// URLs
+            r'www\.[^\s]+',      # www. URLs
+            r'\b[a-zA-Z0-9.-]+\.(com|org|gov|edu|net|mil|int|biz|info|name|museum|coop|aero|jobs|mobi|travel|tel|cat|asia|xxx|post|mail|corp|home|tv|cc|co|io|ly|me|us|uk|ca|au|de|fr|jp|cn|in|br|mx|es|it|nl|se|no|dk|fi|pl|be|ch|at|ie|pt|gr|cz|hu|ro|bg|hr|si|sk|lt|lv|ee|mt|cy|lu|is|li|ad|mc|sm|va|ma|dz|tn|eg|ly|sd|so|dj|er|et|ke|ug|tz|rw|bi|mw|zm|zw|bw|sz|ls|za|na|mg|mu|sc|km|yt|re|mz|ao|cd|cg|cm|cf|td|ne|ng|bj|tg|gh|ci|lr|sl|gn|gw|gm|sn|ml|bf|mr|cv|st|gq|ga|co|ve|gy|sr|br|pe|ec|bo|py|uy|ar|cl|fk|gs)\b[^\s]*',  # domain.tld patterns
+        ]
+        
+        for pattern in url_patterns:
+            def extract_url(match):
+                nonlocal counter
+                placeholder = f"PROTECTED_CONTENT_{counter}"
+                counter += 1
+                all_placeholders[placeholder] = match.group(0)
+                return placeholder
+            
+            text = re.sub(pattern, extract_url, text, flags=re.IGNORECASE)
+        
         return text, all_placeholders
     
-    def _restore_bracket_content(self, text, bracket_placeholders):
-        """Restore both angle bracket and square bracket content from placeholders"""
-        for placeholder, original_bracket in bracket_placeholders.items():
-            text = text.replace(placeholder, original_bracket)
+    def _restore_protected_content(self, text, protected_placeholders):
+        """Restore all protected content from placeholders"""
+        for placeholder, original_content in protected_placeholders.items():
+            text = text.replace(placeholder, original_content)
         return text
     
     def _find_bookmark_range(self, doc, start_bookmark="start_page_copy", end_bookmark="end_page_copy"):
@@ -623,18 +640,18 @@ class MVPDocumentProcessor:
                     cat_para.add_run(f"{count} corrections")
     
     def apply_corporate_rules(self, doc):
-        """Apply all corporate rules to document with formatting preservation"""
+        """Apply all corporate rules to document with comprehensive content protection"""
         total_corrections = 0
         corrections_by_category = defaultdict(int)
         detailed_corrections = []
-
-        print(f"🔄 Applying corporate rules with formatting preservation...")
-
+    
+        print(f"🔄 Applying corporate rules with comprehensive content protection...")
+    
         # Enable Medicare rules if needed
         if self.user_config.get('is_medicare_page'):
             for rule in self.rules.get('medicare_rules', []):
                 rule['enabled'] = True
-
+    
         # Find bookmark range
         start_para, end_para = self._find_bookmark_range(doc)
         
@@ -644,12 +661,12 @@ class MVPDocumentProcessor:
         else:
             print(f"📍 Processing content between bookmarks (paragraphs {start_para}-{end_para})")
             paragraphs_to_process = doc.paragraphs[start_para:end_para + 1]
-
+    
         # Process each paragraph while preserving formatting
         for para_idx, paragraph in enumerate(paragraphs_to_process):
             if not paragraph.text.strip():
                 continue
-
+    
             for run in paragraph.runs:
                 if not run.text.strip():
                     continue
@@ -657,25 +674,25 @@ class MVPDocumentProcessor:
                 original_text = run.text
                 current_text = original_text
                 
-                # Extract and preserve bracket content (angle and square)
-                current_text, bracket_placeholders = self._extract_bracket_content(current_text)
-
+                # Extract and preserve ALL protected content (brackets + URLs)
+                current_text, protected_placeholders = self._extract_protected_content(current_text)
+    
                 # Apply each rule category
                 for category_name, category_rules in self.rules.items():
                     if not isinstance(category_rules, list):
                         continue
-
+    
                     for rule in category_rules:
                         if not isinstance(rule, dict) or not rule.get('enabled', True):
                             continue
-
+    
                         find_pattern = rule.get('find', '')
                         replacement = rule.get('replace', '')
                         is_function = rule.get('is_function', False)
-
+    
                         if not find_pattern:
                             continue
-
+    
                         try:
                             if is_function and callable(replacement):
                                 new_text = re.sub(find_pattern, replacement, current_text, flags=re.IGNORECASE)
@@ -698,37 +715,43 @@ class MVPDocumentProcessor:
                         except re.error as e:
                             print(f"⚠️ Regex error in rule {rule.get('category', 'unknown')}: {e}")
                             continue
-
-                # Restore bracket content
-                current_text = self._restore_bracket_content(current_text, bracket_placeholders)
-
+    
+                # Restore protected content
+                current_text = self._restore_protected_content(current_text, protected_placeholders)
+    
                 # Update run text if changes were made
                 if current_text != original_text:
                     run.text = current_text
-
-        # Apply post-processing for placeholders
+    
+        # Apply post-processing for placeholders with protection
         for paragraph in paragraphs_to_process:
             for run in paragraph.runs:
                 if not run.text.strip():
                     continue
-
+    
                 text = run.text
                 original_text = text
-
-                # Convert NUMBER_WORD_X to actual words
-                if 'NUMBER_WORD_' in text:
+                
+                # IMPORTANT: Protect content again before post-processing
+                text_for_processing, protected_placeholders = self._extract_protected_content(text)
+    
+                # Convert NUMBER_WORD_X to actual words (only in unprotected content)
+                if 'NUMBER_WORD_' in text_for_processing:
                     number_words = {
                         'NUMBER_WORD_1': 'one', 'NUMBER_WORD_2': 'two', 'NUMBER_WORD_3': 'three',
                         'NUMBER_WORD_4': 'four', 'NUMBER_WORD_5': 'five', 'NUMBER_WORD_6': 'six',
                         'NUMBER_WORD_7': 'seven', 'NUMBER_WORD_8': 'eight', 'NUMBER_WORD_9': 'nine'
                     }
                     for placeholder, word in number_words.items():
-                        text = text.replace(placeholder, word)
-
-                if text != original_text:
-                    run.text = text
+                        text_for_processing = text_for_processing.replace(placeholder, word)
+    
+                # Restore protected content
+                final_text = self._restore_protected_content(text_for_processing, protected_placeholders)
+    
+                if final_text != original_text:
+                    run.text = final_text
                     total_corrections += 1
-
+    
         return {
             'total_corrections': total_corrections,
             'corrections_by_category': dict(corrections_by_category),
