@@ -246,18 +246,25 @@ class MVPDocumentProcessor:
             text = text.replace(placeholder, original_bracket)
         return text
     
-    def _find_bookmark_range(self, doc, start_bookmark="START_PAGE_COPY", end_bookmark="END_PAGE_COPY"):
-        """Find paragraph range between bookmarks"""
+    def _find_bookmark_range(self, doc, start_bookmark="start_page_copy", end_bookmark="end_page_copy"):
+        """Find paragraph range between text markers (not Word bookmarks)"""
         start_para = None
         end_para = None
         
+        # Search for text strings in paragraph content
         for i, para in enumerate(doc.paragraphs):
-            para_xml = para._element.xml if para._element else ""
-            if start_bookmark in para_xml:
+            para_text = para.text.strip().lower()
+            
+            # Check if paragraph contains start marker
+            if start_bookmark.lower() in para_text:
                 start_para = i
-            if end_bookmark in para_xml:
+                print(f"📍 Found start marker '{start_bookmark}' at paragraph {i}")
+            
+            # Check if paragraph contains end marker
+            if end_bookmark.lower() in para_text:
                 end_para = i
-                break
+                print(f"📍 Found end marker '{end_bookmark}' at paragraph {i}")
+                break  # Stop searching after finding end marker
         
         return start_para, end_para
     
