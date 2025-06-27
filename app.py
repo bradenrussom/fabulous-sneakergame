@@ -431,9 +431,17 @@ class MVPDocumentProcessor:
         if results['detailed_corrections']:
             doc.add_heading('Detailed Changes Applied', level=2)
             
-            # Create table
+            # Create table with basic styling only
             table = doc.add_table(rows=1, cols=3)
-            table.style = 'Light Grid Accent 1'
+            
+            # Try to apply a basic table style, fall back to no style if it fails
+            try:
+                table.style = 'Table Grid'
+            except:
+                try:
+                    table.style = 'Light Grid'
+                except:
+                    pass  # Use default table style
             
             # Header row
             header_cells = table.rows[0].cells
